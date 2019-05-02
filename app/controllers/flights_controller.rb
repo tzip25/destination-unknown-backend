@@ -18,18 +18,25 @@ class FlightsController < ApplicationController
     response = Net::HTTP.get_response(url).body
     flightsArr = JSON.parse(response)["data"]
 
-    finalArr = flightsArr.map do |flight|
-      flightHash = {}
-      flightHash[:start_location] = flight["cityFrom"]
-      flightHash[:end_location] = flight["cityTo"]
-      flightHash[:airline] = flight["airlines"][0]
-      flightHash[:price] = flight["price"]
-      flightHash[:departure_time] = Time.at(flight["dTime"])
-      flightHash[:arrival_time] = Time.at(flight["aTime"])
-      flightHash[:booking_url] = flight["deep_link"]
-      flightHash
+    if flightsArr
+      finalArr = flightsArr.map do |flight|
+        flightHash = {}
+        flightHash[:start_location] = flight["cityFrom"]
+        flightHash[:start_airport] = flight["flyFrom"]
+        flightHash[:end_airport] = flight["flyTo"]
+        flightHash[:end_location] = flight["cityTo"]
+        flightHash[:airline] = flight["airlines"][0]
+        flightHash[:price] = flight["price"]
+        flightHash[:departure_time] = Time.at(flight["dTime"])
+        flightHash[:arrival_time] = Time.at(flight["aTime"])
+        flightHash[:booking_url] = flight["deep_link"]
+        flightHash
+      end
+      render :json => finalArr[0,50]
+    else
+      render :json => ["invalid"]
     end
-    render :json => finalArr[0,50]
+
   end
 
   def flight_params
