@@ -13,23 +13,41 @@ class FlightsController < ApplicationController
   end
 
   def flight_search
-    url = URI.parse("https://api.skypicker.com/flights?flyFrom=#{params["start_location"]}&dateFrom=#{params["date"]}&dateTo=#{params["date"]}&price_to=#{params["price"]}&partner=picky"
-)
-    response = Net::HTTP.get_response(url).body
-    flightsArr = JSON.parse(response)["data"]
+    airline_codes_url = URI.parse("https://api.skypicker.com/airlines"
+    )
+    airline_codes = Net::HTTP.get_response(airline_codes_url ).body
+    airline_codes_arr = JSON.parse(airline_codes)
 
-    finalArr = flightsArr.map do |flight|
-      flightHash = {}
-      flightHash[:start_location] = flight["cityFrom"]
-      flightHash[:end_location] = flight["cityTo"]
-      flightHash[:airline] = flight["airlines"][0]
-      flightHash[:price] = flight["price"]
-      flightHash[:departure_time] = Time.at(flight["dTime"])
-      flightHash[:arrival_time] = Time.at(flight["aTime"])
-      flightHash[:booking_url] = flight["deep_link"]
-      flightHash
+
+    flight_search_url = URI.parse("https://api.skypicker.com/flights?flyFrom=#{params["start_location"]}&dateFrom=#{params["date"]}&dateTo=#{params["date"]}&price_to=#{params["price"]}&partner=picky"
+)
+    flight_search_response = Net::HTTP.get_response(flight_search_url).body
+    flightsArr = JSON.parse(flight_search_response)["data"]
+
+    if flightsArr
+
+      finalArr = flightsArr.map do |flight|
+
+        airline_name = airline_codes_arr.find do |airline|
+          airline["id"] == flight["airlines"][0]
+        end
+
+        flightHash = {}
+        flightHash[:start_location] = flight["cityFrom"]
+        flightHash[:start_airport] = flight["flyFrom"]
+        flightHash[:end_airport] = flight["flyTo"]
+        flightHash[:end_location] = flight["cityTo"]
+        flightHash[:airline] = airline_name["name"]
+        flightHash[:price] = flight["price"]
+        flightHash[:departure_time] = Time.at(flight["dTime"])
+        flightHash[:arrival_time] = Time.at(flight["aTime"])
+        flightHash[:booking_url] = flight["deep_link"]
+        flightHash
+      end
+      render :json => finalArr[0,50]
+    else
+      render :json => ["invalid"]
     end
-    render :json => finalArr[0,50]
   end
 
   def flight_params
