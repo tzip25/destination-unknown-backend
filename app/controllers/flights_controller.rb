@@ -31,6 +31,18 @@ class FlightsController < ApplicationController
         airline_name = airline_codes_arr.find do |airline|
           airline["id"] == flight["airlines"][0]
         end
+        
+        departure_date_array = Time.at(flight["dTime"]).strftime("%F").split('-')
+        departure_date_array[1], departure_date_array[2] = departure_date_array[2], departure_date_array[1]
+        new_departure = Time.new(departure_date_array[0].to_i, departure_date_array[1].to_i, departure_date_array[2].to_i)
+        departure_date = Time.at(new_departure).strftime("%a %D")
+        departure_time = Time.at(flight["dTime"]).utc.strftime("%l:%M%P")
+
+        arrival_date_array = Time.at(flight["aTime"]).strftime("%F").split('-')
+        arrival_date_array[1], arrival_date_array[2] = arrival_date_array[2], arrival_date_array[1]
+        new_arrival = Time.new(arrival_date_array[0].to_i, arrival_date_array[1].to_i, arrival_date_array[2].to_i)
+        arrival_date = Time.at(new_arrival).strftime("%a %D")
+        arrival_time = Time.at(flight["aTime"]).utc.strftime("%l:%M%P")
 
         flightHash = {}
         flightHash[:start_location] = flight["cityFrom"]
@@ -39,8 +51,10 @@ class FlightsController < ApplicationController
         flightHash[:end_location] = flight["cityTo"]
         flightHash[:airline] = airline_name["name"]
         flightHash[:price] = flight["price"]
-        flightHash[:departure_time] = Time.at(flight["dTime"])
-        flightHash[:arrival_time] = Time.at(flight["aTime"])
+        flightHash[:departure_date] = departure_date
+        flightHash[:departure_time] = departure_time
+        flightHash[:arrival_date] = arrival_date
+        flightHash[:arrival_time] = arrival_time
         flightHash[:booking_url] = flight["deep_link"]
         flightHash
       end
