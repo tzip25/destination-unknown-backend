@@ -18,7 +18,7 @@ class FlightsController < ApplicationController
     arrival_date = old_arrival_date.join('/').to_date
     flight_params["arrival_date"] = arrival_date
     @flight = Flight.find_or_create_by(flight_params)
-    
+
     render :json => @flight
   end
 
@@ -43,15 +43,13 @@ class FlightsController < ApplicationController
         airline_name = airline_codes_arr.find do |airline|
           airline["id"] == flight["airlines"][0]
         end
-        
+
         departure_date_array = Time.at(flight["dTime"]).strftime("%F").split('-')
-        departure_date_array[1], departure_date_array[2] = departure_date_array[2], departure_date_array[1]
         new_departure = Time.new(departure_date_array[0].to_i, departure_date_array[1].to_i, departure_date_array[2].to_i)
         departure_date = Time.at(new_departure).strftime("%a %b/%d/%Y")
         departure_time = Time.at(flight["dTime"]).utc.strftime("%l:%M%P")
 
         arrival_date_array = Time.at(flight["aTime"]).strftime("%F").split('-')
-        arrival_date_array[1], arrival_date_array[2] = arrival_date_array[2], arrival_date_array[1]
         new_arrival = Time.new(arrival_date_array[0].to_i, arrival_date_array[1].to_i, arrival_date_array[2].to_i)
         arrival_date = Time.at(new_arrival).strftime("%a %b/%d/%Y")
         arrival_time = Time.at(flight["aTime"]).utc.strftime("%l:%M%P")
