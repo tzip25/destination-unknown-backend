@@ -23,8 +23,7 @@ class FlightsController < ApplicationController
   end
 
   def flight_search
-    airline_codes_url = URI.parse("https://api.skypicker.com/airlines"
-    )
+    airline_codes_url = URI.parse("https://api.skypicker.com/airlines")
     airline_codes = Net::HTTP.get_response(airline_codes_url ).body
     airline_codes_arr = JSON.parse(airline_codes)
 
@@ -39,6 +38,7 @@ class FlightsController < ApplicationController
     if flightsArr
 
       finalArr = flightsArr.map do |flight|
+
         airline_name = airline_codes_arr.find do |airline|
           airline["id"] == flight["airlines"][0]
         end
@@ -54,6 +54,7 @@ class FlightsController < ApplicationController
         arrival_time = Time.at(flight["aTime"]).utc.strftime("%l:%M%P")
 
         price = (params["currency"] == "USD" ? flight["conversion"]["USD"] : flight["conversion"]["EUR"])
+        airline_logo = URI.parse("https://images.kiwi.com/airlines/64/#{flight["airlines"][0]}.png")
 
         flightHash = {}
         flightHash[:start_location] = flight["cityFrom"]
@@ -70,6 +71,8 @@ class FlightsController < ApplicationController
         flightHash[:booking_url] = flight["deep_link"]
         flightHash[:unx_dtime] = flight["dTime"]
         flightHash[:unx_atime] = flight["aTime"]
+        flightHash[:airline_logo] = airline_logo
+
         flightHash
       end
       render :json => finalArr[0,50]
