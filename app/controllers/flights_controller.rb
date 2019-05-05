@@ -66,6 +66,8 @@ class FlightsController < ApplicationController
         flightHash[:arrival_date] = arrival_date
         flightHash[:arrival_time] = arrival_time
         flightHash[:booking_url] = flight["deep_link"]
+        flightHash[:unx_dtime] = flight["dTime"]
+        flightHash[:unx_atime] = flight["aTime"]
         flightHash
       end
       render :json => finalArr[0,50]
