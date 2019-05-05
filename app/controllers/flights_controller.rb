@@ -29,7 +29,7 @@ class FlightsController < ApplicationController
     airline_codes_arr = JSON.parse(airline_codes)
 
 
-    flight_search_url = URI.parse("https://api.skypicker.com/flights?flyFrom=#{params["start_location"]}&dateFrom=#{params["date"]}&dateTo=#{params["date"]}&price_to=#{params["price"]}&partner=picky")
+    flight_search_url = URI.parse("https://api.skypicker.com/flights?flyFrom=#{params["start_location"]}&dateFrom=#{params["date"]}&dateTo=#{params["date"]}&curr=#{params["currency"]}&price_to=#{params["price"]}&partner=picky")
 
     puts flight_search_url
 
@@ -39,7 +39,6 @@ class FlightsController < ApplicationController
     if flightsArr
 
       finalArr = flightsArr.map do |flight|
-
         airline_name = airline_codes_arr.find do |airline|
           airline["id"] == flight["airlines"][0]
         end
@@ -54,13 +53,16 @@ class FlightsController < ApplicationController
         arrival_date = Time.at(new_arrival).strftime("%a %b/%d/%Y")
         arrival_time = Time.at(flight["aTime"]).utc.strftime("%l:%M%P")
 
+        price = (params["currency"] == "USD" ? flight["conversion"]["USD"] : flight["conversion"]["EUR"])
+
         flightHash = {}
         flightHash[:start_location] = flight["cityFrom"]
         flightHash[:start_airport] = flight["flyFrom"]
         flightHash[:end_airport] = flight["flyTo"]
         flightHash[:end_location] = flight["cityTo"]
         flightHash[:airline] = airline_name["name"]
-        flightHash[:price] = flight["price"]
+        flightHash[:currency] = params["currency"]
+        flightHash[:price] = price
         flightHash[:departure_date] = departure_date
         flightHash[:departure_time] = departure_time
         flightHash[:arrival_date] = arrival_date
