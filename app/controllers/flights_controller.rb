@@ -75,7 +75,7 @@ class FlightsController < ApplicationController
 
         flightHash
       end
-      render :json => finalArr[0,50]
+      render :json => finalArr[0,200]
     else
       render :json => ["invalid"]
     end
