@@ -3,8 +3,17 @@ require 'net/http'
 class FlightsController < ApplicationController
 
   def index
-    @flights = Flight.all
-    render :json => @flights
+    # byebug
+    flights = curr_user.flights
+
+    updated_flights = flights.map do |flight| 
+      userflight = UserFlight.find_by(user_id: curr_user.id, flight_id: flight.id)
+      flightHash = JSON.parse(flight.to_json)
+      flightHash["price"] = userflight.price
+      flightHash["currency"] = userflight.currency
+      flightHash 
+    end
+    render :json => updated_flights
   end
 
   def create
@@ -17,9 +26,11 @@ class FlightsController < ApplicationController
     old_arrival_date[0], old_arrival_date[1] = old_arrival_date[1], old_arrival_date[0]
     arrival_date = old_arrival_date.join('/').to_date
     flight_params["arrival_date"] = arrival_date
-    @flight = Flight.find_or_create_by(flight_params)
+    flight = Flight.find_or_create_by(flight_params)
 
-    render :json => @flight
+    UserFlight.create(price: params["price"], currency: params["currency"], user_id: curr_user.id, flight_id: flight.id)
+
+    # render :json => flight
   end
 
   def flight_search
@@ -28,7 +39,7 @@ class FlightsController < ApplicationController
     airline_codes_arr = JSON.parse(airline_codes)
 
 
-    flight_search_url = URI.parse("https://api.skypicker.com/flights?flyFrom=#{params["start_location"]}&dateFrom=#{params["date"]}&dateTo=#{params["date"]}&curr=#{params["currency"]}&price_to=#{params["price"]}&partner=picky")
+    flight_search_url = URI.parse("https://api.skypicker.com/flights?fly_from=#{params["start_location"]}&dateFrom=#{params["date"]}&dateTo=#{params["date"]}&curr=#{params["currency"]}&price_to=#{params["price"]}&partner=picky")
 
     puts flight_search_url
 
