@@ -3,7 +3,6 @@ require 'net/http'
 class FlightsController < ApplicationController
 
   def index
-    # byebug
     flights = curr_user.flights
 
     updated_flights = flights.map do |flight|
