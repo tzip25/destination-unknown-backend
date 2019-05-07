@@ -6,12 +6,12 @@ class FlightsController < ApplicationController
     # byebug
     flights = curr_user.flights
 
-    updated_flights = flights.map do |flight| 
+    updated_flights = flights.map do |flight|
       userflight = UserFlight.find_by(user_id: curr_user.id, flight_id: flight.id)
       flightHash = JSON.parse(flight.to_json)
       flightHash["price"] = userflight.price
       flightHash["currency"] = userflight.currency
-      flightHash 
+      flightHash
     end
     render :json => updated_flights
   end
