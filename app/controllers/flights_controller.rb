@@ -3,10 +3,16 @@ require 'net/http'
 class FlightsController < ApplicationController
 
   def index
-    flights = curr_user.flights
+    outbound_flights = curr_user.outbound_flights
+    inbound_flights = curr_user.inbound_flights
+    flights = outbound_flights + inbound_flights
 
     updated_flights = flights.map do |flight|
-      userflight = UserFlight.find_by(user_id: curr_user.id, flight_id: flight.id)
+      userflight = if UserFlight.find_by(user_id: curr_user.id, outbound_flight_id: flight.id)
+        UserFlight.find_by(user_id: curr_user.id, outbound_flight_id: flight.id)
+      else
+        UserFlight.find_by(user_id: curr_user.id, inbound_flight_id: flight.id)
+      end
       flightHash = JSON.parse(flight.to_json)
       flightHash["price"] = userflight.price
       flightHash["currency"] = userflight.currency
@@ -28,11 +34,47 @@ class FlightsController < ApplicationController
     flight = Flight.find_or_create_by(flight_params)
 
     UserFlight.create(price: params["price"], currency: params["currency"], user_id: curr_user.id, outbound_flight_id: flight.id)
-    flightHash = JSON.parse(flight.to_json)
-    flightHash["price"] = params["price"]
-    flightHash["currency"] = params["currency"]
+    # flightHash = JSON.parse(flight.to_json)
+    # flightHash["price"] = params["price"]
+    # flightHash["currency"] = params["currency"]
 
-    render :json => flightHash
+    # render :json => flightHash
+  end
+
+  def create_round_trip
+    # byebug
+    details = round_trip_params
+    outbound_flight_details = round_trip_outbound_params
+    inbound_flight_details = round_trip_inbound_params
+
+    outbound_old_departure_date = outbound_flight_details["departure_date"].split(" ")[1].split('/')
+    outbound_old_departure_date[0], outbound_old_departure_date[1] = outbound_old_departure_date[1], outbound_old_departure_date[0]
+    departure_date = outbound_old_departure_date.join('/').to_date
+    outbound_flight_details["departure_date"] = departure_date
+
+    outbound_old_arrival_date = outbound_flight_details["arrival_date"].split(" ")[1].split('/')
+    outbound_old_arrival_date[0], outbound_old_arrival_date[1] = outbound_old_arrival_date[1], outbound_old_arrival_date[0]
+    arrival_date = outbound_old_arrival_date.join('/').to_date
+    outbound_flight_details["arrival_date"] = arrival_date
+    outbound_flight = Flight.find_or_create_by(outbound_flight_details) 
+
+    inbound_old_departure_date = inbound_flight_details["departure_date"].split(" ")[1].split('/')
+    inbound_old_departure_date[0], inbound_old_departure_date[1] = inbound_old_departure_date[1], inbound_old_departure_date[0]
+    departure_date = inbound_old_departure_date.join('/').to_date
+    inbound_flight_details["departure_date"] = departure_date
+
+    inbound_old_arrival_date = inbound_flight_details["arrival_date"].split(" ")[1].split('/')
+    inbound_old_arrival_date[0], inbound_old_arrival_date[1] = inbound_old_arrival_date[1], inbound_old_arrival_date[0]
+    arrival_date = inbound_old_arrival_date.join('/').to_date
+    inbound_flight_details["arrival_date"] = arrival_date
+    inbound_flight = Flight.find_or_create_by(inbound_flight_details)
+
+    UserFlight.create(price: details["price"], currency: details["currency"], user_id: curr_user.id, outbound_flight_id: outbound_flight.id, inbound_flight_id: inbound_flight.id)
+    # flightHash = JSON.parse(flight.to_json)
+    # flightHash["price"] = params["price"]
+    # flightHash["currency"] = params["currency"]
+
+    # render :json => flightHash
   end
 
   def flightInfo(flight) 
@@ -154,6 +196,18 @@ class FlightsController < ApplicationController
 
   def flight_params
     params.require(:flight).permit(:start_location, :end_location, :airline, :arrival_date, :arrival_time, :booking_url, :departure_date, :departure_time, :end_airport, :start_airport, :airline_logo)
+  end
+
+  def round_trip_params
+    params.require(:_json)[0].permit!
+  end
+
+  def round_trip_outbound_params
+    params.require(:_json)[1].permit(:start_location, :end_location, :airline, :arrival_date, :arrival_time, :booking_url, :departure_date, :departure_time, :end_airport, :start_airport, :airline_logo)
+  end
+
+  def round_trip_inbound_params
+    params.require(:_json)[2].permit(:start_location, :end_location, :airline, :arrival_date, :arrival_time, :booking_url, :departure_date, :departure_time, :end_airport, :start_airport, :airline_logo)
   end
 
 end
