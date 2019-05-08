@@ -11,6 +11,7 @@ class FlightsController < ApplicationController
       userflight = if UserFlight.find_by(user_id: curr_user.id, outbound_flight_id: flight.id)
         UserFlight.find_by(user_id: curr_user.id, outbound_flight_id: flight.id)
       else
+
         UserFlight.find_by(user_id: curr_user.id, inbound_flight_id: flight.id)
       end
       flightHash = JSON.parse(flight.to_json)
@@ -56,7 +57,7 @@ class FlightsController < ApplicationController
     outbound_old_arrival_date[0], outbound_old_arrival_date[1] = outbound_old_arrival_date[1], outbound_old_arrival_date[0]
     arrival_date = outbound_old_arrival_date.join('/').to_date
     outbound_flight_details["arrival_date"] = arrival_date
-    outbound_flight = Flight.find_or_create_by(outbound_flight_details) 
+    outbound_flight = Flight.find_or_create_by(outbound_flight_details)
 
     inbound_old_departure_date = inbound_flight_details["departure_date"].split(" ")[1].split('/')
     inbound_old_departure_date[0], inbound_old_departure_date[1] = inbound_old_departure_date[1], inbound_old_departure_date[0]
@@ -77,7 +78,7 @@ class FlightsController < ApplicationController
     # render :json => flightHash
   end
 
-  def flightInfo(flight) 
+  def flightInfo(flight)
 
     departure_date_array = Time.at(flight["dTime"]).strftime("%F").split('-')
     new_departure = Time.new(departure_date_array[0].to_i, departure_date_array[1].to_i, departure_date_array[2].to_i)
@@ -118,45 +119,50 @@ class FlightsController < ApplicationController
 
     flight_search_response = Net::HTTP.get_response(flight_search_url).body
     flightsArr = JSON.parse(flight_search_response)["data"]
-    
-    finalArr = flightsArr.map do |flight|
-      round_trip_details = {}
-      round_trip_array = []
 
-      first_flight = flight["route"][0]
-      second_flight = flight["route"][1]
-      
-      price = (params["currency"] == "USD" ? flight["conversion"]["USD"] : flight["conversion"]["EUR"])
+    if flightsArr
 
-      round_trip_details[:currency] = params["currency"]
-      round_trip_details[:price] = price
-      round_trip_details[:booking_url] = flight["deep_link"]
-      
-      first_flight_obj = flightInfo(first_flight)
-      first_flight_airline_logo = URI.parse("https://images.kiwi.com/airlines/64/#{first_flight["airline"]}.png")
-      first_flight_airline_name = airline_codes_arr.find do |airline|
-        airline["id"] == first_flight["airline"]
-      end
+      finalArr = flightsArr.map do |flight|
+        round_trip_details = {}
+        round_trip_array = []
 
-      second_flight_obj = flightInfo(second_flight)
-      second_flight_airline_logo = URI.parse("https://images.kiwi.com/airlines/64/#{second_flight["airline"]}.png")
-      second_flight_airline_name = airline_codes_arr.find do |airline|
-        airline["id"] == second_flight["airline"]
-      end
+        first_flight = flight["route"][0]
+        second_flight = flight["route"][1]
 
-      first_flight_obj[:airline] = first_flight_airline_name["name"]
-      first_flight_obj[:airline_logo] = first_flight_airline_logo
+        price = (params["currency"] == "USD" ? flight["conversion"]["USD"] : flight["conversion"]["EUR"])
 
-      second_flight_obj[:airline] = second_flight_airline_name["name"]
-      second_flight_obj[:airline_logo] = second_flight_airline_logo
+        round_trip_details[:currency] = params["currency"]
+        round_trip_details[:price] = price
+        round_trip_details[:booking_url] = flight["deep_link"]
 
-      round_trip_array.push(round_trip_details, first_flight_obj, second_flight_obj)
+        first_flight_obj = flightInfo(first_flight)
+        first_flight_airline_logo = URI.parse("https://images.kiwi.com/airlines/64/#{first_flight["airline"]}.png")
+        first_flight_airline_name = airline_codes_arr.find do |airline|
+          airline["id"] == first_flight["airline"]
+        end
+
+        second_flight_obj = flightInfo(second_flight)
+        second_flight_airline_logo = URI.parse("https://images.kiwi.com/airlines/64/#{second_flight["airline"]}.png")
+        second_flight_airline_name = airline_codes_arr.find do |airline|
+          airline["id"] == second_flight["airline"]
+        end
+
+        first_flight_obj[:airline] = first_flight_airline_name["name"]
+        first_flight_obj[:airline_logo] = first_flight_airline_logo
+
+        second_flight_obj[:airline] = second_flight_airline_name["name"]
+        second_flight_obj[:airline_logo] = second_flight_airline_logo
+
+        round_trip_array.push(round_trip_details, first_flight_obj, second_flight_obj)
     end
-    render :json => finalArr
-    
+      render :json => finalArr[0,200]
+    else
+      render :json => ["invalid"]
+    end
+
   end
 
-  
+
 
   def flight_search
     flight_search_url = URI.parse("https://api.skypicker.com/flights?fly_from=#{params["start_location"]}&dateFrom=#{params["date"]}&dateTo=#{params["date"]}&curr=#{params["currency"]}&price_to=#{params["price"]}&partner=picky")
@@ -193,6 +199,8 @@ class FlightsController < ApplicationController
       render :json => ["invalid"]
     end
   end
+
+
 
   def flight_params
     params.require(:flight).permit(:start_location, :end_location, :airline, :arrival_date, :arrival_time, :booking_url, :departure_date, :departure_time, :end_airport, :start_airport, :airline_logo)
